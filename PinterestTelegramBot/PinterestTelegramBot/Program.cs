@@ -10,7 +10,7 @@ namespace PinterestTelegramBot
         public static async Task Main(string[] args)
         {
             EnvConfig envConfig = new EnvConfig();
-            envConfig.InitializeVariables(out var token, out var channelId, out var pinterestSession);
+            envConfig.InitializeVariables(out string token, out string channelId, out string pinterestSession);
 
             TelegramBot telegramBot = new TelegramBot(token);
             PinterestImageScraper pinterestImageScraper = new PinterestImageScraper(pinterestSession);
