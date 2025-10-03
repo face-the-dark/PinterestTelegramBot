@@ -1,34 +1,39 @@
-﻿using System;
-using System.IO;
-using System.Threading.Tasks;
-using DotNetEnv;
-using Telegram.Bot;
-using Telegram.Bot.Types;
+﻿using System.Threading.Tasks;
+using PinterestTelegramBot.Config;
+using PinterestTelegramBot.Service;
+using PinterestTelegramBot.Service.Scraper;
 
 namespace PinterestTelegramBot
 {
     internal class Program
     {
-        private const string EnvPath = "../../../.env";
-        private const string TelegramBotToken = "TELEGRAM_BOT_TOKEN";
-
         public static async Task Main(string[] args)
         {
-            Env.Load(EnvPath);
-            
-            string token = Environment.GetEnvironmentVariable(TelegramBotToken);
+            EnvConfig envConfig = new EnvConfig();
+            envConfig.InitializeVariables(out var token, out var channelId, out var pinterestSession);
 
-            if (token == null)
-            {
-                Console.WriteLine($"Environment variable [{TelegramBotToken}] not found.");
-                
-                return;
-            }
+            TelegramBot telegramBot = new TelegramBot(token);
+            PinterestImageScraper pinterestImageScraper = new PinterestImageScraper(pinterestSession);
             
-            TelegramBotClient bot = new TelegramBotClient(token);
-            User user = await bot.GetMe();
-            
-            Console.WriteLine($"Hello, World! I am user {user.Id} and my name is {user.FirstName}.");
+            async Task SendImageJob() => await GetAndSendImage(pinterestImageScraper, telegramBot, channelId);
+
+            using BotScheduler scheduler = new BotScheduler(SendImageJob);
+            scheduler.Start();
+
+            await SendImageJob();
+
+            await Task.Delay(-1);
+        }
+
+        private static async Task GetAndSendImage
+        (
+            PinterestImageScraper pinterestImageScraper,
+            TelegramBot telegramBot,
+            string channelId
+        )
+        {
+            string imageUrl = await pinterestImageScraper.GetImageUrl();
+            await telegramBot.SendImage(channelId, imageUrl);
         }
     }
 }
