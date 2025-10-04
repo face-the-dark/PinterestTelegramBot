@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
-using Newtonsoft.Json.Linq;
 using PinterestTelegramBot.Utils;
 
 namespace PinterestTelegramBot.Service.Scraper
@@ -20,7 +19,6 @@ namespace PinterestTelegramBot.Service.Scraper
 
         private const string IdName = "id";
         private const string ContentId = "__PWS_INITIAL_PROPS__";
-        private const string RootKey = "initialReduxState";
 
         private readonly JsonParser _jsonParser;
         private readonly HttpClient _httpClient;
@@ -31,15 +29,29 @@ namespace PinterestTelegramBot.Service.Scraper
             _httpClient = new HttpClient();
             
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
-            
             _httpClient.DefaultRequestHeaders.Add(CookieName, $"{PinterestSessionCookie}{pinterestSession}");
         }
 
         public async Task<string> GetImageUrl()
         {
-            string url = $"{SearchUrl}{Uri.EscapeDataString(SearchKeyword)}";
-            string html = await _httpClient.GetStringAsync(url);
+            string html = await GetHtml();
+            List<string> allImageUrls = GetAllImageUrls(html);
 
+            if (allImageUrls.Count > 0)
+                return allImageUrls[RandomUtils.Next(allImageUrls.Count)];
+
+            return null;
+        }
+
+        private async Task<string> GetHtml()
+        {
+            string url = $"{SearchUrl}{Uri.EscapeDataString(SearchKeyword)}";
+            
+            return await _httpClient.GetStringAsync(url);
+        }
+
+        private List<string> GetAllImageUrls(string html)
+        {
             HtmlDocument htmlDocument = new HtmlDocument();
             htmlDocument.LoadHtml(html);
 
@@ -48,24 +60,15 @@ namespace PinterestTelegramBot.Service.Scraper
 
             string jsonContentText = contentNode?.InnerText;
 
+            List<string> allImageUrls = new List<string>();
+            
             if (string.IsNullOrEmpty(jsonContentText) == false)
             {
-                JObject jsonObject = JObject.Parse(jsonContentText);
-
-                JToken rootJsonToken = jsonObject[RootKey];
-
-                List<JToken> imagesList = _jsonParser.FindAllImages(rootJsonToken);
-
-                List<string> allImageUrls = new List<string>();
-
-                foreach (JToken imageJsonToken in imagesList)
-                    allImageUrls.AddRange(_jsonParser.FindAllImageUrls(imageJsonToken));
-
-                if (allImageUrls.Count > 0)
-                    return allImageUrls[RandomUtils.Next(allImageUrls.Count)];
+                List<string> imageUrls = _jsonParser.GetAllImageUrls(jsonContentText);
+                allImageUrls.AddRange(imageUrls);
             }
-
-            return null;
+            
+            return allImageUrls;
         }
     }
 }

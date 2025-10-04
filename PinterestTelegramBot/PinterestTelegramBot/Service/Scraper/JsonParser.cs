@@ -5,11 +5,28 @@ namespace PinterestTelegramBot.Service.Scraper
 {
     public class JsonParser
     {
+        private const string RootKey = "initialReduxState";
         private const string ImagesJsonKey = "images";
         private const string OriginalSizePropertyName = "orig";
         private const string Url = "url";
 
-        public List<JToken> FindAllImages(JToken jsonToken)
+        public List<string> GetAllImageUrls(string jsonContentText)
+        {
+            JObject jsonObject = JObject.Parse(jsonContentText);
+
+            JToken rootJsonToken = jsonObject[RootKey];
+
+            List<JToken> imagesList = FindImageTokens(rootJsonToken);
+
+            List<string> allImageUrls = new List<string>();
+
+            foreach (JToken imageJsonToken in imagesList)
+                allImageUrls.AddRange(FindAllImageUrls(imageJsonToken));
+            
+            return allImageUrls;
+        }
+
+        private List<JToken> FindImageTokens(JToken jsonToken)
         {
             List<JToken> imagesTokens = new List<JToken>();
 
@@ -20,22 +37,22 @@ namespace PinterestTelegramBot.Service.Scraper
             {
                 foreach (JProperty jsonProperty in jsonToken.Children<JProperty>())
                 {
-                    if (jsonProperty.Name == ImagesJsonKey) 
+                    if (jsonProperty.Name == ImagesJsonKey)
                         imagesTokens.Add(jsonProperty.Value);
 
-                    imagesTokens.AddRange(FindAllImages(jsonProperty.Value));
+                    imagesTokens.AddRange(FindImageTokens(jsonProperty.Value));
                 }
             }
             else if (jsonToken.Type == JTokenType.Array)
             {
                 foreach (JToken childJsonToken in jsonToken.Children())
-                    imagesTokens.AddRange(FindAllImages(childJsonToken));
+                    imagesTokens.AddRange(FindImageTokens(childJsonToken));
             }
 
             return imagesTokens;
         }
 
-        public List<string> FindAllImageUrls(JToken imagesToken)
+        private List<string> FindAllImageUrls(JToken imagesToken)
         {
             List<string> urls = new List<string>();
 
