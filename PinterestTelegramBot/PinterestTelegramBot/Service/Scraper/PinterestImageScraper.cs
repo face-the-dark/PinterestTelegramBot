@@ -4,7 +4,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using HtmlAgilityPack;
-using PinterestTelegramBot.Utils;
 
 namespace PinterestTelegramBot.Service.Scraper
 {
@@ -14,6 +13,7 @@ namespace PinterestTelegramBot.Service.Scraper
         private const string CookieName = "Cookie";
         private const string PinterestSessionCookie = "_pinterest_sess=";
 
+        private const string HomeUrl = "https://ru.pinterest.com/";
         private const string SearchUrl = "https://www.pinterest.com/search/pins/?q=";
         private const string SearchKeyword = "tyan";
 
@@ -22,35 +22,52 @@ namespace PinterestTelegramBot.Service.Scraper
 
         private readonly JsonParser _jsonParser;
         private readonly HttpClient _httpClient;
+        
+        private readonly bool _isSearch;
 
-        public PinterestImageScraper(string pinterestSession)
+        public PinterestImageScraper(bool isSearch, string pinterestSession)
         {
             _jsonParser = new JsonParser();
             _httpClient = new HttpClient();
+            _isSearch = isSearch;
             
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             _httpClient.DefaultRequestHeaders.Add(CookieName, $"{PinterestSessionCookie}{pinterestSession}");
         }
 
-        public async Task<string> GetImageUrl()
+        public async Task<HashSet<string>> GetAllImageUrls()
         {
             string html = await GetHtml();
-            List<string> allImageUrls = GetAllImageUrls(html);
-
-            if (allImageUrls.Count > 0)
-                return allImageUrls[RandomUtils.Next(allImageUrls.Count)];
-
-            return null;
+            
+            return ScrapAllImageUrls(html);
         }
 
         private async Task<string> GetHtml()
         {
-            string url = $"{SearchUrl}{Uri.EscapeDataString(SearchKeyword)}";
+            string url = HomeUrl;
+            
+            if (_isSearch) 
+                url = $"{SearchUrl}{Uri.EscapeDataString(SearchKeyword)}";
             
             return await _httpClient.GetStringAsync(url);
         }
 
-        private List<string> GetAllImageUrls(string html)
+        private HashSet<string> ScrapAllImageUrls(string html)
+        {
+            HashSet<string> allImageUrls = new HashSet<string>();
+            
+            string jsonContentText = GetJsonContentText(html);
+
+            if (string.IsNullOrEmpty(jsonContentText) == false)
+            {
+                List<string> imageUrls = _jsonParser.GetAllImageUrls(jsonContentText);
+                allImageUrls.UnionWith(imageUrls);
+            }
+            
+            return allImageUrls;
+        }
+
+        private string GetJsonContentText(string html)
         {
             HtmlDocument htmlDocument = new HtmlDocument();
             htmlDocument.LoadHtml(html);
@@ -58,17 +75,7 @@ namespace PinterestTelegramBot.Service.Scraper
             HtmlNode contentNode = htmlDocument.DocumentNode.Descendants()
                 .FirstOrDefault(n => n.GetAttributeValue(IdName, string.Empty) == ContentId);
 
-            string jsonContentText = contentNode?.InnerText;
-
-            List<string> allImageUrls = new List<string>();
-            
-            if (string.IsNullOrEmpty(jsonContentText) == false)
-            {
-                List<string> imageUrls = _jsonParser.GetAllImageUrls(jsonContentText);
-                allImageUrls.AddRange(imageUrls);
-            }
-            
-            return allImageUrls;
+            return contentNode?.InnerText;
         }
     }
 }

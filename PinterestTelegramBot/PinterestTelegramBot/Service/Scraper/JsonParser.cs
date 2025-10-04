@@ -12,47 +12,45 @@ namespace PinterestTelegramBot.Service.Scraper
 
         public List<string> GetAllImageUrls(string jsonContentText)
         {
-            JObject jsonObject = JObject.Parse(jsonContentText);
-
-            JToken rootJsonToken = jsonObject[RootKey];
-
-            List<JToken> imagesList = FindImageTokens(rootJsonToken);
-
             List<string> allImageUrls = new List<string>();
+            
+            JObject jsonObject = JObject.Parse(jsonContentText);
+            JToken rootJsonToken = jsonObject[RootKey];
+            List<JToken> imagesList = ParseImageTokens(rootJsonToken);
 
             foreach (JToken imageJsonToken in imagesList)
-                allImageUrls.AddRange(FindAllImageUrls(imageJsonToken));
+                allImageUrls.AddRange(GetAllImageUrls(imageJsonToken));
             
             return allImageUrls;
         }
 
-        private List<JToken> FindImageTokens(JToken jsonToken)
+        private List<JToken> ParseImageTokens(JToken jsonToken)
         {
-            List<JToken> imagesTokens = new List<JToken>();
+            List<JToken> imageTokens = new List<JToken>();
 
             if (jsonToken == null)
-                return imagesTokens;
+                return imageTokens;
 
             if (jsonToken.Type == JTokenType.Object)
             {
                 foreach (JProperty jsonProperty in jsonToken.Children<JProperty>())
                 {
                     if (jsonProperty.Name == ImagesJsonKey)
-                        imagesTokens.Add(jsonProperty.Value);
+                        imageTokens.Add(jsonProperty.Value);
 
-                    imagesTokens.AddRange(FindImageTokens(jsonProperty.Value));
+                    imageTokens.AddRange(ParseImageTokens(jsonProperty.Value));
                 }
             }
             else if (jsonToken.Type == JTokenType.Array)
             {
                 foreach (JToken childJsonToken in jsonToken.Children())
-                    imagesTokens.AddRange(FindImageTokens(childJsonToken));
+                    imageTokens.AddRange(ParseImageTokens(childJsonToken));
             }
 
-            return imagesTokens;
+            return imageTokens;
         }
 
-        private List<string> FindAllImageUrls(JToken imagesToken)
+        private List<string> GetAllImageUrls(JToken imagesToken)
         {
             List<string> urls = new List<string>();
 

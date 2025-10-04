@@ -6,7 +6,7 @@ namespace PinterestTelegramBot.Service
 {
     public class BotScheduler : IDisposable
     {
-        private const int IntervalMinutes = 10;
+        private const int IntervalMinutes = 1;
         private const int SecondsInMinute = 60;
         private const int MillisecondsInSecond = 1000;
         
