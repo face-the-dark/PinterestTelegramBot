@@ -4,4 +4,4 @@
 
 ## Архитектура 
 
-![Описание изображения](/PinterestTelegramBot/Architecture.png)
+![Архитектура](Architecture.png)
