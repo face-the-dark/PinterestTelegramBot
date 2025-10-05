@@ -6,7 +6,7 @@ using PinterestTelegramBot.Service.Scraper;
 
 namespace PinterestTelegramBot
 {
-    internal class Program
+    public class Program
     {
         public static async Task Main(string[] args)
         {
