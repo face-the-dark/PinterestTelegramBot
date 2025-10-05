@@ -1,12 +1,14 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Timers;
+using PinterestTelegramBot.Utils;
 
 namespace PinterestTelegramBot.Service
 {
     public class BotScheduler : IDisposable
     {
-        private const int IntervalMinutes = 1;
+        private const int MinIntervalMinutes = 7;
+        private const int MaxIntervalMinutes = 15;
         private const int SecondsInMinute = 60;
         private const int MillisecondsInSecond = 1000;
         
@@ -17,7 +19,8 @@ namespace PinterestTelegramBot.Service
         {
             _job = job;
 
-            int interval = IntervalMinutes * SecondsInMinute * MillisecondsInSecond;
+            int intervalMinutes = RandomUtils.Next(MinIntervalMinutes, MaxIntervalMinutes);
+            int interval = intervalMinutes * SecondsInMinute * MillisecondsInSecond;
             
             _timer = new Timer(interval);
             _timer.Elapsed += async (s, e) => await ExecuteJob();
