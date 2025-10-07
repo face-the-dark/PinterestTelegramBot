@@ -6,35 +6,34 @@ namespace PinterestTelegramBot.Config
     public class EnvConfig
     {
         private const string EnvPath = "../../../.env";
-        
-        private const string TelegramBotToken = "TELEGRAM_BOT_TOKEN";
-        private const string ChannelId = "CHANNEL_ID";
-        private const string PinterestSession = "PINTEREST_SESSION";
-        private const string IsSearch = "IS_SEARCH";
-    
-        public void InitializeVariables
-        (
-            out string telegramBotToken,
-            out string channelId,
-            out string pinterestSession,
-            out string isSearch
-        )
+
+        private const string TelegramBotTokenKey = "TELEGRAM_BOT_TOKEN";
+        private const string ChannelIdKey = "CHANNEL_ID";
+        private const string PinterestSessionKey = "PINTEREST_SESSION";
+        private const string IsSearchKey = "IS_SEARCH";
+
+        public EnvConfig()
         {
             Env.Load(EnvPath);
-
-            telegramBotToken = GetEnvOrThrowException(TelegramBotToken);
-            channelId = GetEnvOrThrowException(ChannelId);
-            pinterestSession = GetEnvOrThrowException(PinterestSession);
-            isSearch = GetEnvOrThrowException(IsSearch);
+            
+            TelegramBotToken = GetEnvOrThrowException(TelegramBotTokenKey);
+            ChannelId = GetEnvOrThrowException(ChannelIdKey);
+            PinterestSession = GetEnvOrThrowException(PinterestSessionKey);
+            IsSearch = GetEnvOrThrowException(IsSearchKey);
         }
-    
+
+        public string TelegramBotToken { get; }
+        public string ChannelId { get; }
+        public string PinterestSession { get; }
+        public string IsSearch { get; }
+        
         private string GetEnvOrThrowException(string key)
         {
             string value = Environment.GetEnvironmentVariable(key);
-        
+
             if (string.IsNullOrEmpty(value))
                 throw new Exception($"Environment variable [{key}] not found");
-        
+
             return value;
         }
     }

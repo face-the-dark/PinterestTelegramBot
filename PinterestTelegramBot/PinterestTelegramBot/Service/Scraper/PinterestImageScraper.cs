@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -13,23 +12,18 @@ namespace PinterestTelegramBot.Service.Scraper
         private const string CookieName = "Cookie";
         private const string PinterestSessionCookie = "_pinterest_sess=";
 
-        private const string HomeUrl = "https://ru.pinterest.com/";
-        private const string SearchUrl = "https://www.pinterest.com/search/pins/?q=";
-        private const string SearchKeyword = "tyan";
-
         private const string IdName = "id";
         private const string ContentId = "__PWS_INITIAL_PROPS__";
 
         private readonly JsonParser _jsonParser;
         private readonly HttpClient _httpClient;
-        
-        private readonly bool _isSearch;
+        private readonly UrlBuilder _urlBuilder;
 
-        public PinterestImageScraper(bool isSearch, string pinterestSession)
+        public PinterestImageScraper(UrlBuilder urlBuilder, string pinterestSession)
         {
             _jsonParser = new JsonParser();
             _httpClient = new HttpClient();
-            _isSearch = isSearch;
+            _urlBuilder = urlBuilder;
             
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(UserAgent);
             _httpClient.DefaultRequestHeaders.Add(CookieName, $"{PinterestSessionCookie}{pinterestSession}");
@@ -44,11 +38,8 @@ namespace PinterestTelegramBot.Service.Scraper
 
         private async Task<string> GetHtml()
         {
-            string url = HomeUrl;
-            
-            if (_isSearch) 
-                url = $"{SearchUrl}{Uri.EscapeDataString(SearchKeyword)}";
-            
+            string url = _urlBuilder.Build();
+
             return await _httpClient.GetStringAsync(url);
         }
 
